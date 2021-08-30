@@ -3,6 +3,7 @@ package com.garven.rabbitmq;
 import com.garven.rabbitmq.config.RabbitMqConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,17 @@ public class Producer {
 
     @Test
     public void testSend() {
+        template.convertAndSend(RabbitMqConfig.EXCHANGE_NAME + "111", "boot.start", "Hello Rabbit!");
+    }
+
+    /**
+     * 确认模式：
+     * 步骤：
+     * 1. 确认模式开启：ConnectionFactory 中开启publisher-confirms="true"
+     * 2. 再rabbitTemplate 定义confirmCallback回调函数
+     */
+    @Test
+    public void testConfirm() {
 
         template.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
 
@@ -42,6 +54,42 @@ public class Producer {
         });
 
         template.convertAndSend(RabbitMqConfig.EXCHANGE_NAME + "111", "boot.start", "Hello Rabbit!");
+    }
+
+
+    /**
+     * 回退模式：当消息发送给Exchange 之后，Exchange 路由到Queue 失败时，才会执行ReturnCallback
+     * 步骤：
+     * 1. ConnectionFactory 开启回退模式
+     * 2. rabbitTemplate 设置ReturnCallback
+     * 3. 设置Exchange 处理消息的模式：
+     * <1>. 如果消息没有路由到Queue，则丢弃消息(默认)
+     * <2>. 如果消息没有路由到Queue，Mandatory返回给消息发送方ReturnCallback。
+     */
+    @Test
+    public void testReturn() {
+
+        template.setMandatory(true);
+
+        template.setReturnCallback(new RabbitTemplate.ReturnCallback() {
+            /**
+             * @param message 消息
+             * @param replyCode 返回code 码
+             * @param replyText 返回消息
+             * @param exchange 交换机名称
+             * @param routingKey routingKey 名称
+             */
+            @Override
+            public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
+                System.out.println(message);
+                System.out.println(replyCode);
+                System.out.println(replyText);
+                System.out.println(exchange);
+                System.out.println(routingKey);
+            }
+        });
+
+        template.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "boots.start", "Hello Rabbit!");
     }
 
 }

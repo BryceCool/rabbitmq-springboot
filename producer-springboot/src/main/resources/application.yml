@@ -6,5 +6,7 @@ spring:
     virtual-host: /garven
     username: garven
     password: garven
-    // 开启producer -> exchange 的confirm 机制
+    # 开启producer -> exchange 的confirm 机制
     publisher-confirms: true
+    # 开启exchange -> queue 的return 机制
+    publisher-returns: true
